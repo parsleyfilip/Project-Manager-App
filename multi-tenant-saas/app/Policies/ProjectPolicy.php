@@ -50,7 +50,7 @@ class ProjectPolicy
         }
 
         // Project creator can update their own projects
-        return $project->created_by === $user->id;
+        return $project->creator_id === $user->id;
     }
 
     /**

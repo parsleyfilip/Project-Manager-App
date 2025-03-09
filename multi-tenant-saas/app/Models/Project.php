@@ -20,7 +20,7 @@ class Project extends Model
         'start_date',
         'due_date',
         'team_id',
-        'created_by',
+        'creator_id',
     ];
 
     protected $casts = [
@@ -40,6 +40,6 @@ class Project extends Model
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'creator_id');
     }
 }

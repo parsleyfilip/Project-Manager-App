@@ -1,12 +1,12 @@
 <x-app-layout>
-    <x-page-header>
-        <x-slot name="title">Teams</x-slot>
-        <x-slot name="actions">
-            <a href="{{ route('teams.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+    <x-slot name="header">
+        <div class="flex justify-between items-center">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Teams</h2>
+            <x-button :href="route('teams.create')" variant="primary">
                 New Team
-            </a>
-        </x-slot>
-    </x-page-header>
+            </x-button>
+        </div>
+    </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -34,84 +34,80 @@
             </div>
 
             <!-- Teams List -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        @forelse($teams as $team)
-                            <div class="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-                                <div class="p-5">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h3 class="text-lg font-semibold">
-                                                <a href="{{ route('teams.show', $team) }}" class="hover:text-indigo-600">
-                                                    {{ $team->name }}
-                                                </a>
-                                            </h3>
-                                            @if($team->owner_id === auth()->id())
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                                    Owner
-                                                </span>
-                                            @endif
-                                        </div>
-                                        @if($team->owner_id === auth()->id())
-                                            <div class="flex items-center space-x-2">
-                                                <a href="{{ route('teams.edit', $team) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                                <form action="{{ route('teams.destroy', $team) }}" method="POST" class="inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this team? This action cannot be undone.')">
-                                                        Delete
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    <div class="mt-4">
-                                        <div class="flex justify-between text-sm text-gray-500">
-                                            <span>{{ $team->members_count }} members</span>
-                                            <span>{{ $team->projects_count }} projects</span>
-                                        </div>
-                                    </div>
-
-                                    @if($team->description)
-                                        <p class="mt-2 text-sm text-gray-600 line-clamp-2">
-                                            {{ $team->description }}
-                                        </p>
-                                    @endif
-
-                                    <div class="mt-4">
-                                        @if($team->members->isNotEmpty())
-                                            <div class="flex -space-x-2 overflow-hidden">
-                                                @foreach($team->members->take(5) as $member)
-                                                    <span class="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-500">
-                                                        <span class="flex h-full w-full items-center justify-center text-xs font-medium text-white">
-                                                            {{ substr($member->name, 0, 1) }}
-                                                        </span>
-                                                    </span>
-                                                @endforeach
-                                                @if($team->members->count() > 5)
-                                                    <span class="flex items-center justify-center h-8 w-8 rounded-full ring-2 ring-white bg-gray-100 text-xs font-medium text-gray-500">
-                                                        +{{ $team->members->count() - 5 }}
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </div>
+            <div class="bg-white overflow-hidden shadow-sm rounded-lg">
+                <div class="p-6 bg-white border-b border-gray-200">
+                    <div class="overflow-hidden">
+                        <div class="flow-root">
+                            <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                                <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                                    <table class="min-w-full divide-y divide-gray-300">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Team Name</th>
+                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Members</th>
+                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Projects</th>
+                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Role</th>
+                                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                                                    <span class="sr-only">Actions</span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            @forelse($teams as $team)
+                                                <tr>
+                                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                                                        <a href="{{ route('teams.show', $team) }}" class="hover:text-teal-600">
+                                                            {{ $team->name }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ $team->members_count }}</td>
+                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ $team->projects_count }}</td>
+                                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                                        @if($team->owner_id === auth()->id())
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                                Owner
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                                Member
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                                                        <x-button :href="route('teams.show', $team)" variant="secondary" class="mr-2">
+                                                            View
+                                                        </x-button>
+                                                        @if($team->owner_id === auth()->id())
+                                                            <x-button :href="route('teams.edit', $team)" variant="secondary">
+                                                                Edit
+                                                            </x-button>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="5" class="px-3 py-4 text-sm text-gray-500 text-center">
+                                                        <div class="text-center py-8">
+                                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                                            </svg>
+                                                            <h3 class="mt-2 text-sm font-medium text-gray-900">No teams</h3>
+                                                            <p class="mt-1 text-sm text-gray-500">Get started by creating a new team.</p>
+                                                            <div class="mt-6">
+                                                                <x-button :href="route('teams.create')" variant="primary">
+                                                                    New Team
+                                                                </x-button>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                        @empty
-                            <div class="col-span-3">
-                                <p class="text-gray-500 text-center py-8">No teams found.</p>
-                            </div>
-                        @endforelse
-                    </div>
-
-                    @if($teams->hasPages())
-                        <div class="mt-6">
-                            {{ $teams->links() }}
                         </div>
-                    @endif
+                    </div>
                 </div>
             </div>
         </div>

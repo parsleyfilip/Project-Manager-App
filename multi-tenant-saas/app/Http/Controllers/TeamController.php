@@ -7,9 +7,13 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\TeamInvitation;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
 
 class TeamController extends Controller
 {
+    use AuthorizesRequests;
+
     /**
      * Display a listing of the resource.
      */
@@ -50,7 +54,21 @@ class TeamController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'member_emails' => ['nullable', 'array'],
-            'member_emails.*' => ['nullable', 'email', 'distinct'],
+            'member_emails.*' => [
+                'nullable', 
+                'email',
+                'distinct',
+                function ($attribute, $value, $fail) {
+                    $tempMailDomains = [
+                        'tempmail.com', 'temp-mail.org', 'disposablemail.com', 'mailinator.com',
+                        'guerrillamail.com', '10minutemail.com', 'yopmail.com', 'throwawaymail.com'
+                    ];
+                    $domain = explode('@', $value)[1] ?? '';
+                    if (in_array(strtolower($domain), $tempMailDomains)) {
+                        $fail('Temporary or disposable email addresses are not allowed.');
+                    }
+                }
+            ],
         ]);
 
         $team = Team::create([
@@ -152,12 +170,25 @@ class TeamController extends Controller
         $this->authorize('update', $team);
 
         $validated = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => [
+                'required', 
+                'email',
+                function ($attribute, $value, $fail) {
+                    $tempMailDomains = [
+                        'tempmail.com', 'temp-mail.org', 'disposablemail.com', 'mailinator.com',
+                        'guerrillamail.com', '10minutemail.com', 'yopmail.com', 'throwawaymail.com'
+                    ];
+                    $domain = explode('@', $value)[1] ?? '';
+                    if (in_array(strtolower($domain), $tempMailDomains)) {
+                        $fail('Temporary or disposable email addresses are not allowed.');
+                    }
+                }
+            ],
         ]);
 
         $user = User::firstOrCreate(
             ['email' => $validated['email']],
-            ['name' => explode('@', $validated['email'])[0], 'password' => bcrypt(str_random(16))]
+            ['name' => explode('@', $validated['email'])[0], 'password' => bcrypt(Str::random(16))]
         );
 
         if (!$team->members->contains($user)) {
