@@ -13,9 +13,9 @@
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold">Recent Projects</h3>
-                            <a href="{{ route('projects.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                            <x-button :href="route('projects.create')" variant="primary">
                                 New Project
-                            </a>
+                            </x-button>
                         </div>
                         @forelse(auth()->user()->teams()->with(['projects' => function($query) { 
                             $query->latest()->limit(5); 
@@ -58,9 +58,9 @@
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold">My Tasks</h3>
-                            <a href="{{ route('tasks.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                            <x-button :href="route('tasks.create')" variant="primary">
                                 New Task
-                            </a>
+                            </x-button>
                         </div>
                         @php
                             $tasks = auth()->user()->assignedTasks()
@@ -120,9 +120,9 @@
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold">My Teams</h3>
-                            <a href="{{ route('teams.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                            <x-button :href="route('teams.create')" variant="primary">
                                 New Team
-                            </a>
+                            </x-button>
                         </div>
                         @forelse(auth()->user()->teams()->withCount(['members', 'projects'])->latest()->limit(5)->get() as $team)
                             <div class="mb-4 p-4 border rounded-lg">

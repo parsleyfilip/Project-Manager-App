@@ -23,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_admin',
     ];
 
     /**
@@ -62,16 +63,16 @@ class User extends Authenticatable
 
     public function assignedTasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'assigned_to');
+        return $this->hasMany(Task::class, 'assignee_id');
     }
 
     public function createdProjects(): HasMany
     {
-        return $this->hasMany(Project::class, 'created_by');
+        return $this->hasMany(Project::class, 'creator_id');
     }
 
     public function createdTasks(): HasMany
     {
-        return $this->hasMany(Task::class, 'created_by');
+        return $this->hasMany(Task::class, 'creator_id');
     }
 }

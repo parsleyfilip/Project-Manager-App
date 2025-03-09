@@ -13,23 +13,49 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $projects = Project::with(['team', 'tasks'])
-            ->whereIn('team_id', auth()->user()->teams()->pluck('teams.id'))
-            ->latest()
-            ->paginate(10);
+        $query = Project::query()
+            ->whereIn('team_id', $request->user()->teams->pluck('id'))
+            ->with(['team', 'tasks'])
+            ->withCount('tasks');
 
-        return view('projects.index', compact('projects'));
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('team')) {
+            $query->where('team_id', $request->team);
+        }
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%')
+                ->orWhere('description', 'like', '%' . $request->search . '%');
+        }
+
+        $projects = $query->latest()->paginate(12);
+
+        return view('projects.index', [
+            'projects' => $projects,
+        ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
-        $teams = auth()->user()->teams;
-        return view('projects.create', compact('teams'));
+        $teams = $request->user()->teams;
+        $selectedTeam = null;
+
+        if ($request->filled('team_id')) {
+            $selectedTeam = $teams->find($request->team_id);
+        }
+
+        return view('projects.create', [
+            'teams' => $teams,
+            'selectedTeam' => $selectedTeam,
+        ]);
     }
 
     /**
@@ -40,21 +66,21 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'team_id' => [
-                'required',
-                Rule::exists('teams', 'id')->where(function ($query) {
-                    $query->whereIn('id', auth()->user()->teams()->pluck('teams.id'));
-                }),
-            ],
+            'team_id' => ['required', 'exists:teams,id'],
+            'status' => ['required', 'in:planning,in_progress,on_hold,completed,cancelled'],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['required', 'in:planning,in_progress,on_hold,completed,cancelled'],
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
-        $validated['created_by'] = auth()->id();
+        $team = Team::findOrFail($validated['team_id']);
+        
+        // Check if user belongs to the team
+        abort_unless($team->members->contains($request->user()), 403);
 
-        $project = Project::create($validated);
+        $project = $team->projects()->create([
+            ...$validated,
+            'creator_id' => $request->user()->id,
+        ]);
 
         return redirect()->route('projects.show', $project)
             ->with('success', 'Project created successfully.');
@@ -67,11 +93,13 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $project->load(['team', 'tasks' => function ($query) {
-            $query->latest();
-        }, 'tasks.assignee']);
+        $project->load(['team', 'creator', 'tasks' => function ($query) {
+            $query->with(['assignee'])->latest();
+        }]);
 
-        return view('projects.show', compact('project'));
+        return view('projects.show', [
+            'project' => $project,
+        ]);
     }
 
     /**
@@ -82,7 +110,11 @@ class ProjectController extends Controller
         $this->authorize('update', $project);
 
         $teams = auth()->user()->teams;
-        return view('projects.edit', compact('project', 'teams'));
+
+        return view('projects.edit', [
+            'project' => $project,
+            'teams' => $teams,
+        ]);
     }
 
     /**
@@ -95,18 +127,17 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'team_id' => [
-                'required',
-                Rule::exists('teams', 'id')->where(function ($query) {
-                    $query->whereIn('id', auth()->user()->teams()->pluck('teams.id'));
-                }),
-            ],
+            'team_id' => ['required', 'exists:teams,id'],
+            'status' => ['required', 'in:planning,in_progress,on_hold,completed,cancelled'],
             'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'status' => ['required', 'in:planning,in_progress,on_hold,completed,cancelled'],
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+        $team = Team::findOrFail($validated['team_id']);
+        
+        // Check if user belongs to the team
+        abort_unless($team->members->contains($request->user()), 403);
+
         $project->update($validated);
 
         return redirect()->route('projects.show', $project)
