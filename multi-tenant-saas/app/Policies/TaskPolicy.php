@@ -2,26 +2,26 @@
 
 namespace App\Policies;
 
-use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class ProjectPolicy
+class TaskPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return true; // Users can view projects they have access to through teams
+        return true; // Users can view tasks they have access to through teams
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Project $project): bool
+    public function view(User $user, Task $task): bool
     {
-        return $user->teams()->where('teams.id', $project->team_id)->exists();
+        return $user->teams()->where('teams.id', $task->project->team_id)->exists();
     }
 
     /**
@@ -29,50 +29,52 @@ class ProjectPolicy
      */
     public function create(User $user): bool
     {
-        return true; // Users can create projects in teams they belong to
+        return true; // Users can create tasks in projects they have access to
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Project $project): bool
+    public function update(User $user, Task $task): bool
     {
-        $team = $project->team;
+        $team = $task->project->team;
         $membership = $user->teams()->where('teams.id', $team->id)->first();
 
         if (!$membership) {
             return false;
         }
 
-        // Team owners and admins can update any project
+        // Team owners and admins can update any task
         if ($team->owner_id === $user->id || $membership->pivot->role === 'admin') {
             return true;
         }
 
-        // Project creator can update their own projects
-        return $project->created_by === $user->id;
+        // Task creator or assignee can update the task
+        return $task->created_by === $user->id || $task->assigned_to === $user->id;
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Project $project): bool
+    public function delete(User $user, Task $task): bool
     {
-        $team = $project->team;
+        $team = $task->project->team;
         $membership = $user->teams()->where('teams.id', $team->id)->first();
 
         if (!$membership) {
             return false;
         }
 
-        // Only team owners and admins can delete projects
-        return $team->owner_id === $user->id || $membership->pivot->role === 'admin';
+        // Team owners, admins, and task creators can delete tasks
+        return $team->owner_id === $user->id 
+            || $membership->pivot->role === 'admin'
+            || $task->created_by === $user->id;
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Project $project): bool
+    public function restore(User $user, Task $task): bool
     {
         return false;
     }
@@ -80,7 +82,7 @@ class ProjectPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Project $project): bool
+    public function forceDelete(User $user, Task $task): bool
     {
         return false;
     }
